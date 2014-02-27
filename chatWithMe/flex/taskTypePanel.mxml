@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" label="Task Type"
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		 xmlns:sfcgrid="components.sfcgrid.*" 
+		 creationComplete="hbox2_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.containers.TitleWindow;
+			import mx.controls.Alert;
+			import mx.controls.CheckBox;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.example.dto.spitterFooter;
+			import org.example.entities.TaskType;
+			import org.example.services.TaskTypeService;
+			import org.granite.collections.BasicMap;
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			import org.granite.tide.service.DefaultServiceInitializer;
+			
+
+			
+			[Bindable] 
+			[Inject]
+			public var taskTypeService:TaskTypeService;
+			
+			[Bindable] 
+			public var taskTypeList:ArrayCollection = new ArrayCollection();
+			
+			
+			[Bindable] 
+			public var checkBoxMap:BasicMap = new BasicMap();
+			
+			
+			[Bindable] 
+			public var selectedSpitterList:ArrayCollection = new ArrayCollection();
+			
+			
+			[Bindable] 
+			public var myspitterFooter:spitterFooter = new spitterFooter;
+			
+			[Bindable] 
+			public var spitterFooterList:ArrayCollection = new ArrayCollection();
+			
+			
+			
+		
+			public var taskTypeTitleWindow:TitleWindow;
+			
+			
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("selected item size " + selectedSpitterList.length);
+				
+				//Alert.show("checkboxMap item size " + checkBoxMap.length);
+				
+			/*	for each(var x:Spitter in selectedSpitterList) {
+					
+					
+					Alert.show("id " + x.id.toString());
+					
+				}
+				*/
+				
+			}
+			
+	
+			
+			protected function hbox1_creationCompleteHandler(event:FlexEvent):void
+			{
+				myspitterFooter.idFooter = 0;
+				myspitterFooter.total = "Toplam";
+				spitterFooterList.addItem(myspitterFooter);
+			}
+			
+			
+			protected function spitterDataProvider_doubleClickHandler(event:MouseEvent):void
+			{
+				var selectedTaskType:TaskType = (taskTypeDatarovider.selectedItem as TaskType);
+				
+				taskTypeDatarovider.invalidateList();
+				
+				if((checkBoxMap.get(selectedTaskType.id) as CheckBox).selected == true) {
+					
+					(checkBoxMap.get(selectedTaskType.id) as CheckBox).selected = false;
+					selectedSpitterList.removeItemAt(selectedSpitterList.getItemIndex(selectedTaskType));
+					(spitterFooterList.getItemAt(0) as spitterFooter).idFooter -= selectedTaskType.id;
+					
+				}else {
+					
+					(checkBoxMap.get(selectedTaskType.id) as CheckBox).selected = true;
+					selectedSpitterList.addItem(selectedTaskType);
+					(spitterFooterList.getItemAt(0) as spitterFooter).idFooter += selectedTaskType.id;
+					
+				}
+				taskTypeDatarovider.invalidateList();
+			}
+			
+
+
+			
+			
+			protected function hbox2_creationCompleteHandler(event:FlexEvent):void
+			{
+				Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('/chatWithMe');
+				taskTypeService.getTaskTypes(getTaskTypesResultListener,faultListener);
+			}
+			private function faultListener(event:TideFaultEvent):void {
+				var message:String = event.fault.faultString;
+			}
+			
+			private function getTaskTypesResultListener(event:TideResultEvent):void 
+			{
+				taskTypeList = event.result as ArrayCollection;
+				
+				for each(var taskType:TaskType in taskTypeList) {
+					
+					checkBoxMap.put(taskType.id, new CheckBox());
+				}
+				taskTypeDatarovider.invalidateList();
+			}
+		
+			
+			protected function addTaskTypeClickHandler(event:MouseEvent):void
+			{
+			    taskTypeTitleWindow = new TitleWindow();
+	
+				var myTestPanel:testPanel = new testPanel();
+				myTestPanel.editMode = false;
+				myTestPanel.mytaskTypePanel = this;
+				
+				taskTypeTitleWindow.addChild(myTestPanel);
+				PopUpManager.addPopUp(taskTypeTitleWindow, this,true);
+				PopUpManager.centerPopUp(taskTypeTitleWindow);
+			}
+			
+			protected function editTaskTypeClickHandler(event:MouseEvent):void
+			{
+				taskTypeTitleWindow = new TitleWindow();
+				
+				var myTestPanel:testPanel = new testPanel();
+				myTestPanel.editMode = true;
+				myTestPanel.mytaskTypePanel = this;
+				myTestPanel.bindableName = (taskTypeDatarovider.selectedItem as TaskType).name;
+				
+				taskTypeTitleWindow.addChild(myTestPanel);
+				PopUpManager.addPopUp(taskTypeTitleWindow, this,true);
+				PopUpManager.centerPopUp(taskTypeTitleWindow);
+			}	
+			
+			protected function deleteTaskTypeClickHandler(event:MouseEvent):void
+			{
+				taskTypeService.deleteTaskType((taskTypeDatarovider.selectedItem as TaskType),deleteTaskTypeListener,faultListener);
+			}
+			private function deleteTaskTypeListener(event:TideResultEvent):void 
+			{
+				taskTypeService.getTaskTypes(getTaskTypesResultListener,faultListener);
+			}
+			
+			private function refreshTaskTypeListener():void 
+			{
+				taskTypeService.getTaskTypes(getTaskTypesResultListener,faultListener);
+			}
+			
+			[Observer("myObserver")]
+			public function myObserver():void {
+				
+				Alert.show("observer");
+				
+			}
+			
+			[Observer("removePopUp")]
+			public function removePopUp():void {
+				
+				PopUpManager.removePopUp(taskTypeTitleWindow);
+				refreshTaskTypeListener();
+			}
+			
+			
+			[Observer("insertTaskType")]
+			public function insertTaskType(taskName:String):void {
+				
+				var taskType:TaskType = new TaskType();
+				taskType.name = taskName;
+				taskTypeService.addTaskType(taskType,insertupdateTaskTypeResultListener,faultListener);
+			}
+			
+			
+			[Observer("updateTaskType")]
+			public function updateTaskType(taskName:String):void {
+				
+				(taskTypeDatarovider.selectedItem as TaskType).name = taskName;
+				taskTypeService.updateTaskType((taskTypeDatarovider.selectedItem as TaskType),insertupdateTaskTypeResultListener,faultListener);
+			}
+			
+			
+			private function insertupdateTaskTypeResultListener(event:TideResultEvent):void 
+			{
+				PopUpManager.removePopUp(taskTypeTitleWindow);
+				refreshTaskTypeListener();
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+
+
+	
+	<mx:VBox verticalGap="0" width="99%" height="99%">
+		
+	
+	<mx:DataGrid id="taskTypeDatarovider" dataProvider="{taskTypeList}"  width="100%"  height="100%" allowMultipleSelection="true"
+				 doubleClick="spitterDataProvider_doubleClickHandler(event)" doubleClickEnabled="true">
+		
+		
+		<mx:columns>
+			
+			
+			<mx:DataGridColumn headerText="ID" width="25" id="checkBoxItem" resizable="false" >
+				
+				<mx:itemRenderer>
+					<fx:Component id="innerDocument">
+						
+						<mx:CheckBox selectedField="id" click="checkbox1_clickHandler(event)" horizontalCenter="0" verticalCenter="0" paddingLeft="6"
+									 selected="{(outerDocument.checkBoxMap.get((data as TaskType).id) as CheckBox).selected}" >
+							
+							<fx:Script>
+								<![CDATA[
+									
+									import org.example.entities.TaskType;
+									import org.example.dto.spitterFooter;
+									
+									import mx.events.FlexEvent;
+									
+									import mx.controls.Alert;
+									
+									
+									protected function checkbox1_clickHandler(event:MouseEvent):void
+									{
+										if(this.selected == true) {
+											outerDocument.selectedSpitterList.addItem((data as TaskType));
+											
+											(outerDocument.spitterFooterList.getItemAt(0) as spitterFooter).idFooter += (data as TaskType).id;
+											this.selected = true;
+											(outerDocument.checkBoxMap.get((data as TaskType).id) as CheckBox).selected = true;
+										}else {
+											
+											outerDocument.selectedSpitterList.removeItemAt(outerDocument.selectedSpitterList.getItemIndex(data as TaskType));
+											(outerDocument.spitterFooterList.getItemAt(0) as spitterFooter).idFooter -= (data as TaskType).id;
+											this.selected = false;
+											(outerDocument.checkBoxMap.get((data as TaskType).id) as CheckBox).selected = false;
+										}
+									}
+								]]>
+							</fx:Script>
+							
+							
+						</mx:CheckBox>
+						
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+			
+			<mx:DataGridColumn dataField="name" headerText="Name" width="150" resizable="false"/>
+			<mx:DataGridColumn dataField="id" headerText="Value" />
+		</mx:columns>
+	</mx:DataGrid>
+	
+	
+		<mx:HBox horizontalGap="0">
+			
+			<s:Button label="Add" click="addTaskTypeClickHandler(event)">
+				
+			</s:Button>
+			
+			<s:Button label="Edit" click="editTaskTypeClickHandler(event)">
+				
+			</s:Button>
+			<s:Button label="Delete" click="deleteTaskTypeClickHandler(event)">
+				
+			</s:Button>	
+			
+		</mx:HBox>
+		
+		
+	</mx:VBox>
+	
+	
+</mx:HBox>

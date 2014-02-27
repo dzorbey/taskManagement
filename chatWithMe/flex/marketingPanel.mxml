@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" label="Marketing"
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import org.example.entities.Spitter;
+			
+			
+			[Bindable] 
+			public var spitterList:ArrayCollection;
+			
+			
+			protected function datagrid1_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("id : " + (spitterDataProvider.selectedItem as Spitter).id);
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<mx:DataGrid id="spitterDataProvider" dataProvider="{spitterList}" click="datagrid1_clickHandler(event)" width="99%"  height="99%">
+		<mx:columns>
+			<mx:DataGridColumn dataField="id" headerText="ID" />
+			<mx:DataGridColumn dataField="name" headerText="Name"/>
+		</mx:columns>
+		
+	</mx:DataGrid>
+	
+</mx:HBox>

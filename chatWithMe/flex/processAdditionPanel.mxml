@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="800" height="500"  creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.containers.TitleWindow;
+			import mx.controls.Alert;
+			import mx.controls.CheckBox;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.example.entities.MainProcess;
+			import org.example.entities.Task;
+			import org.example.services.ProcessService;
+			import org.example.services.TaskService;
+			import org.granite.collections.BasicMap;
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			import org.granite.tide.service.DefaultServiceInitializer;
+			
+			[Bindable] 
+			[Inject]
+			public var taskService:TaskService;
+			
+			
+			[Bindable] 
+			[Inject]
+			public var processService:ProcessService;
+			
+			
+			[Bindable] 
+			public var myProcessListPanel:processListPanel;
+			
+			[Bindable] 
+			public var editMode:Boolean;
+			
+			[Bindable] 
+			public var parameterMap:BasicMap = new BasicMap();
+			
+			
+			[Bindable] 
+			public var process:MainProcess = new MainProcess();
+			
+			[Bindable] 
+			public var taskTypeList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable] 
+			public var task:Task;
+			
+			
+			public var taskTitleWindow:TitleWindow;
+			
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				myProcessListPanel.removePopUp();
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(editMode == false) {
+					
+					process.name = processName.text;
+					parameterMap.remove("process");
+					parameterMap.put("process",process);
+					myProcessListPanel.insertProcess(parameterMap);
+					
+				}else {
+					process.name = processName.text;
+					parameterMap.remove("process");
+					parameterMap.put("process",process);
+					myProcessListPanel.updateProcess(parameterMap);
+				}
+			}
+			
+			protected function addTaskClickHandler(event:MouseEvent):void
+			{
+				var task:Task = new Task();
+				task.mainProcess = process;
+				
+				taskTitleWindow = new TitleWindow();
+				
+				var myTaskPanel:taskPanel = new taskPanel();
+				myTaskPanel.task = task;
+				myTaskPanel.editMode = false;
+				myTaskPanel.taskTypeList = taskTypeList;
+				myTaskPanel.tasklist = process.taskList;
+				myTaskPanel.myProcessAdditionPanel = this;
+				
+				taskTitleWindow.addChild(myTaskPanel);
+				PopUpManager.addPopUp(taskTitleWindow, this,true);
+				PopUpManager.centerPopUp(taskTitleWindow);
+			}
+			
+			
+			
+			public function editTaskClickHandler(event:MouseEvent):void
+			{
+				taskService.getTaskById((processTaskListDataGrid.selectedItem as Task).id,taskEventListener,faultListener);
+			}		
+			
+			private function taskEventListener(event:TideResultEvent):void 
+			{
+				taskTitleWindow = new TitleWindow();
+				
+				var myTaskPanel:taskPanel = new taskPanel();
+				myTaskPanel.task = event.result as Task;
+				myTaskPanel.editMode = true;
+				myTaskPanel.taskTypeList = taskTypeList;
+				myTaskPanel.tasklist = process.taskList;
+				myTaskPanel.myProcessAdditionPanel = this;
+				
+				taskTitleWindow.addChild(myTaskPanel);
+				PopUpManager.addPopUp(taskTitleWindow, this,true);
+				PopUpManager.centerPopUp(taskTitleWindow);
+			}
+			
+			
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('/chatWithMe');
+			}
+			
+			
+			public function insertTask(parameterMap:BasicMap):void
+			{
+				taskService.addTask(parameterMap.get("task") as Task, taskInsertUpdateResultListener,faultListener);
+			}		
+			private function faultListener(event:TideFaultEvent):void {
+				var message:String = event.fault.faultString;
+			}
+			
+			
+			private function taskInsertUpdateResultListener(event:TideResultEvent):void 
+			{
+				processService.getProcessById(process.id,getProcessResultListener,faultListener);
+			}
+			
+			public function removeTaskList():void 
+			{
+				PopUpManager.removePopUp(taskTitleWindow);
+			}
+			
+			
+			public function updateTask(parameterMap:BasicMap):void
+			{
+				taskService.updateTaskFromProcess(parameterMap.get("task") as Task,process,taskInsertUpdateResultListener,faultListener);
+			}	
+
+			
+			private function getProcessResultListener(event:TideResultEvent):void 
+			{
+			    process = event.result as MainProcess;
+				PopUpManager.removePopUp(taskTitleWindow);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<mx:VBox width="100%">
+		
+		<mx:HBox>
+			<mx:Label text="Process Name: "/>
+			<mx:TextInput id="processName" width="100%" text="{process.name}"/>
+		</mx:HBox>
+		
+		<mx:HBox height="10">
+			
+		</mx:HBox>
+		
+		<mx:DataGrid id="processTaskListDataGrid" dataProvider="{process.taskList}"  width="100%"  height="250" allowMultipleSelection="true" doubleClickEnabled="true">
+			<mx:columns>
+				<mx:DataGridColumn  headerText="Name" width="150" resizable="false">
+					
+					<mx:itemRenderer>
+						<fx:Component id="innerDocument">
+							
+							<mx:Label text="{(data as Task).name}" >
+								<fx:Script>
+									<![CDATA[
+										
+										import org.example.entities.Task;
+										
+									]]>
+								</fx:Script>
+							</mx:Label>
+						</fx:Component>
+					</mx:itemRenderer>
+					
+					</mx:DataGridColumn>
+				
+				
+				<mx:DataGridColumn dataField="taskTypeNameDisplay" headerText="Task Type" width="150" resizable="false" />
+				<mx:DataGridColumn dataField="previousTaskNameDisplay" headerText="Previous Task" width="150" resizable="false" />
+				<mx:DataGridColumn dataField="nextTaskNameDisplay" headerText="Next Task" />
+			</mx:columns>
+		</mx:DataGrid>
+		
+		<mx:HBox horizontalGap="0">
+			<mx:Button label="Add Task" click="addTaskClickHandler(event)"/>
+			<mx:Button label="Edit Task" click="editTaskClickHandler(event)"/>
+			<mx:Button label="Remove Task"/>
+		</mx:HBox>
+
+	
+	<mx:HBox>
+		<mx:Button label="OK" click="button2_clickHandler(event)" />
+		<mx:Button label="Cancel" click="button1_clickHandler(event)"/>
+	</mx:HBox>
+	
+	</mx:VBox>
+	
+</s:Group>

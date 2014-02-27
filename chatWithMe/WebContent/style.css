@@ -1,0 +1,87 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+global
+{
+	/*
+	chromeColor: #294867;
+	color: #CEE7F4;
+	contentBackgroundColor: #39628C;
+	symbolColor: #000000;
+	rollOverColor: #355D89;
+	selectionColor: #294867;
+	focusColor: #333300;
+	accentColor: #6589AD;
+*/	
+
+	modalTransparencyBlur: 0;
+	modalTransparency: 0.0;
+	modalTransparencyColor: black;
+	modalTransparencyDuration: 500;
+	
+}
+
+
+
+s|Application {
+	
+	/*background-color: #6D6F71;
+*/
+	background-color: #fafafa;
+}
+
+mx|Tree
+{
+	defaultLeafIcon: 					Embed(source="assets/Tree_defaultLeafIcon.png");
+	/*	disclosureClosedIcon: 				Embed(source="assets/Tree_disclosureClosedIcon.png");
+	disclosureOpenIcon: 				Embed(source="assets/Tree_disclosureOpenIcon.png");
+	*/
+	disclosureClosedIcon: 				Embed(source="assets/plusTransparent.png");
+	disclosureOpenIcon: 				Embed(source="assets/minusTransparent.png");
+	
+	folderClosedIcon: 					Embed(source="assets/Tree_folderClosedIcon.png");
+	folderOpenIcon: 					Embed(source="assets/Tree_folderOpenIcon.png");
+	/*borderSkin: Embed(source="assets/Tree_borderSkin.png");
+	/*contentBackgroundColor: #fafafa;
+	*/
+	fontWeight: normal;
+	/*	fontSize: 12;
+	*/
+	content-background-color:				#fafafa;
+	line-alpha: 1;    
+	line-color: #808080;
+	line-style: dotted;
+	line-thickness: 1;
+	/* these two styles make the tree lines look better */
+	padding-top: 2;        /* default is 2 */
+	padding-bottom: 0;   
+	padding-left: 2;   
+	text-align :  left;
+	
+}
+/*
+s|Panel {
+	chrome-color: #9A2D30;
+	background-color: #f8f8f8;
+}*/
+s|Panel #titleDisplay {
+	color: white;
+	font-size: 14;
+	font-family: "Arial";
+	padding-right: 8px;
+	font-style: normal;
+}
+s|Button {
+	chrome-color: #5E899C;
+	color: white;
+}
+s|Button s|Label {
+	font-style: normal;
+}
+s|Label {
+	font-style: italic;
+}
+#result {
+	color: white;
+}

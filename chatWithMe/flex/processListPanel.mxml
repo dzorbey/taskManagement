@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" label="Processes"
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		 xmlns:sfcgrid="components.sfcgrid.*" 
+		 creationComplete="hbox2_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.containers.TitleWindow;
+			import mx.controls.Alert;
+			import mx.controls.CheckBox;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.example.dto.spitterFooter;
+			import org.example.entities.MainProcess;
+			import org.example.services.ProcessService;
+			import org.example.services.TaskService;
+			import org.example.services.TaskTypeService;
+			import org.granite.collections.BasicMap;
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			import org.granite.tide.service.DefaultServiceInitializer;
+			
+
+			
+			[Bindable] 
+			[Inject]
+			public var processService:ProcessService;
+			
+			[Bindable] 
+			[Inject]
+			public var taskTypeService:TaskTypeService;
+			
+			[Bindable] 
+			[Inject]
+			public var taskService:TaskService;
+			
+			[Bindable] 
+			public var processList:ArrayCollection = new ArrayCollection();
+			
+			
+			[Bindable] 
+			public var checkBoxMap:BasicMap = new BasicMap();
+			
+			
+			[Bindable] 
+			public var selectedSpitterList:ArrayCollection = new ArrayCollection();
+			
+			
+			[Bindable] 
+			public var myspitterFooter:spitterFooter = new spitterFooter;
+			
+			[Bindable] 
+			public var spitterFooterList:ArrayCollection = new ArrayCollection();
+			
+			
+			[Bindable] 
+			public var taskTypeList:ArrayCollection = new ArrayCollection();
+			
+			
+			public var processTitleWindow:TitleWindow;
+			
+			
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("selected item size " + selectedSpitterList.length);
+				
+				//Alert.show("checkboxMap item size " + checkBoxMap.length);
+				
+			/*	for each(var x:Spitter in selectedSpitterList) {
+					
+					
+					Alert.show("id " + x.id.toString());
+					
+				}
+				*/
+				
+			}
+			
+	
+			
+			protected function hbox1_creationCompleteHandler(event:FlexEvent):void
+			{
+				myspitterFooter.idFooter = 0;
+				myspitterFooter.total = "Toplam";
+				spitterFooterList.addItem(myspitterFooter);
+			}
+			
+			
+			protected function spitterDataProvider_doubleClickHandler(event:MouseEvent):void
+			{
+				var selectedProcess:MainProcess = (processListDataGrid.selectedItem as MainProcess);
+				
+				processListDataGrid.invalidateList();
+				
+				if((checkBoxMap.get(selectedProcess.id) as CheckBox).selected == true) {
+					
+					(checkBoxMap.get(selectedProcess.id) as CheckBox).selected = false;
+					selectedSpitterList.removeItemAt(selectedSpitterList.getItemIndex(selectedProcess));
+					(spitterFooterList.getItemAt(0) as spitterFooter).idFooter -= selectedProcess.id;
+					
+				}else {
+					
+					(checkBoxMap.get(selectedProcess.id) as CheckBox).selected = true;
+					selectedSpitterList.addItem(selectedProcess);
+					(spitterFooterList.getItemAt(0) as spitterFooter).idFooter += selectedProcess.id;
+					
+				}
+				processListDataGrid.invalidateList();
+			}
+			
+
+
+			
+			
+			protected function hbox2_creationCompleteHandler(event:FlexEvent):void
+			{
+				Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('/chatWithMe');
+				processService.getProcesses(getProcessListResultListener,faultListener);
+			}
+			private function faultListener(event:TideFaultEvent):void {
+				var message:String = event.fault.faultString;
+			}
+			
+			
+			private function getProcessListResultListener(event:TideResultEvent):void 
+			{
+				processList.removeAll();
+				processList = event.result as ArrayCollection;
+				
+				/*for each(var process:MainProcess in processList) {
+					
+					checkBoxMap.put(process.id, new CheckBox());
+				}*/
+				processListDataGrid.invalidateList();
+				taskTypeService.getTaskTypes(getTaskTypesResultListener,faultListener);
+			}
+			private function getTaskTypesResultListener(event:TideResultEvent):void 
+			{
+				taskTypeList = event.result as ArrayCollection;
+			}
+			
+			
+			
+			protected function addProcessClickHandler(event:MouseEvent):void
+			{
+				processTitleWindow = new TitleWindow();
+	
+				var myProcessAdditionPanel:processAdditionPanel = new processAdditionPanel();
+				myProcessAdditionPanel.editMode = false;
+				myProcessAdditionPanel.taskService = taskService;
+				myProcessAdditionPanel.processService = processService;
+				myProcessAdditionPanel.taskTypeList = taskTypeList;
+				myProcessAdditionPanel.myProcessListPanel = this;
+				
+				processTitleWindow.addChild(myProcessAdditionPanel);
+				PopUpManager.addPopUp(processTitleWindow, this,true);
+				PopUpManager.centerPopUp(processTitleWindow);
+			}
+			
+			protected function editProcessClickHandler(event:MouseEvent):void
+			{
+				processTitleWindow = new TitleWindow();
+				
+				var myProcessAdditionPanel:processAdditionPanel = new processAdditionPanel();
+				myProcessAdditionPanel.editMode = true;
+				myProcessAdditionPanel.taskService = taskService;
+				myProcessAdditionPanel.processService = processService;
+				myProcessAdditionPanel.taskTypeList = taskTypeList;
+				myProcessAdditionPanel.myProcessListPanel = this;
+				myProcessAdditionPanel.process = processListDataGrid.selectedItem as MainProcess;
+				
+				processTitleWindow.addChild(myProcessAdditionPanel);
+				PopUpManager.addPopUp(processTitleWindow, this,true);
+				PopUpManager.centerPopUp(processTitleWindow);
+			}	
+			
+			protected function deleteProcessClickHandler(event:MouseEvent):void
+			{
+				processService.deleteProcess((processListDataGrid.selectedItem as MainProcess),deleteProcessListener,faultListener);
+			}
+			private function deleteProcessListener(event:TideResultEvent):void 
+			{
+				processService.getProcesses(getProcessListResultListener,faultListener);
+			}
+			
+			protected function refreshProcessListClickHandler(event:MouseEvent):void
+			{
+				processService.getProcesses(getProcessListResultListener,faultListener);
+			}
+		
+			
+			
+			private function refreshProcessListener():void 
+			{
+				processService.getProcesses(getProcessListResultListener,faultListener);
+			}
+			
+			[Observer("myObserver")]
+			public function myObserver():void {
+				
+				Alert.show("observer");
+				
+			}
+			
+			[Observer("removePopUp")]
+			public function removePopUp():void {
+				
+				PopUpManager.removePopUp(processTitleWindow);
+				refreshProcessListener();
+			}
+			
+			
+			[Observer("insertProcess")]
+			public function insertProcess(parameterMap:BasicMap):void {
+				
+				var process:MainProcess = parameterMap.get("process") as MainProcess;
+				processService.addProcess(process,insertupdateProcessResultListener,faultListener);
+			}
+			
+			
+			[Observer("updateProcess")]
+			public function updateProcess(parameterMap:BasicMap):void {
+				
+				var process:MainProcess = parameterMap.get("process") as MainProcess;
+				processService.updateProcess(process,insertupdateProcessResultListener,faultListener);
+			}
+			
+			
+			private function insertupdateProcessResultListener(event:TideResultEvent):void 
+			{
+				PopUpManager.removePopUp(processTitleWindow);
+				refreshProcessListener();
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+
+
+	
+	<mx:VBox verticalGap="0" width="99%" height="99%">
+		
+	
+	<mx:DataGrid id="processListDataGrid" dataProvider="{processList}"  width="100%"  height="100%" allowMultipleSelection="true"
+				 doubleClick="spitterDataProvider_doubleClickHandler(event)" doubleClickEnabled="true">
+		
+		
+		<mx:columns>
+			
+			<!--
+			<mx:DataGridColumn headerText="ID" width="25" id="checkBoxItem" resizable="false" >
+				
+				<mx:itemRenderer>
+					<fx:Component id="innerDocument">
+						
+						<mx:CheckBox selectedField="id" click="checkbox1_clickHandler(event)" horizontalCenter="0" verticalCenter="0" paddingLeft="6"
+									 selected="{(outerDocument.checkBoxMap.get((data as MainProcess).id) as CheckBox).selected}" >
+							
+							<fx:Script>
+								<![CDATA[
+									
+									import org.example.entities.MainProcess;
+									import org.example.dto.spitterFooter;
+									
+									import mx.events.FlexEvent;
+									
+									import mx.controls.Alert;
+									
+									
+									protected function checkbox1_clickHandler(event:MouseEvent):void
+									{
+										if(this.selected == true) {
+											outerDocument.selectedSpitterList.addItem((data as MainProcess));
+											
+											(outerDocument.spitterFooterList.getItemAt(0) as spitterFooter).idFooter += (data as MainProcess).id;
+											this.selected = true;
+											(outerDocument.checkBoxMap.get((data as MainProcess).id) as CheckBox).selected = true;
+										}else {
+											
+											outerDocument.selectedSpitterList.removeItemAt(outerDocument.selectedSpitterList.getItemIndex(data as MainProcess));
+											(outerDocument.spitterFooterList.getItemAt(0) as spitterFooter).idFooter -= (data as MainProcess).id;
+											this.selected = false;
+											(outerDocument.checkBoxMap.get((data as MainProcess).id) as CheckBox).selected = false;
+										}
+									}
+								]]>
+							</fx:Script>
+							
+							
+						</mx:CheckBox>
+						
+					</fx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+			-->
+			<mx:DataGridColumn dataField="name" headerText="Name" width="150" resizable="false"/>
+			<mx:DataGridColumn dataField="id" headerText="Value" />
+		</mx:columns>
+	</mx:DataGrid>
+	
+	
+		<mx:HBox horizontalGap="0">
+			
+			<s:Button label="Add" click="addProcessClickHandler(event)">
+				
+			</s:Button>
+			
+			<s:Button label="Edit" click="editProcessClickHandler(event)">
+				
+			</s:Button>
+			<s:Button label="Delete" click="deleteProcessClickHandler(event)">
+				
+			</s:Button>	
+			<s:Button label="Refresh List" click="refreshProcessListClickHandler(event)">
+				
+			</s:Button>	
+			
+		</mx:HBox>
+		
+		
+	</mx:VBox>
+	
+	
+</mx:HBox>

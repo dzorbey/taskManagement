@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.collections.ListCollectionView;
+			import mx.containers.TitleWindow;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.example.entities.Task;
+			import org.example.entities.TaskType;
+			import org.granite.collections.BasicMap;
+			
+			[Bindable] 
+			public var myProcessAdditionPanel:processAdditionPanel;
+			
+			[Bindable] 
+			public var bindableName:String;
+			
+			[Bindable] 
+			public var editMode:Boolean;
+			
+			[Bindable] 
+			public var taskTypeList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable] 
+			public var task:Task = new Task();
+			
+			[Bindable] 
+			public var parameterMap:BasicMap = new BasicMap();
+			
+			[Bindable]
+			public var tasklist:ListCollectionView = new ListCollectionView();
+			
+			
+			public var previuosTaskTitleWindow:TitleWindow;
+			
+			public var nextTaskTitleWindow:TitleWindow;
+			
+			[Bindable]
+			public var maximumProcessTime:Number;
+			
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				myProcessAdditionPanel.removeTaskList();
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				task.name = taskName.text;
+				
+				if(editMode == false) {
+					
+					parameterMap.remove("task");
+					parameterMap.put("task",task);
+					myProcessAdditionPanel.insertTask(parameterMap);
+					
+				}else {
+					
+					parameterMap.remove("task");
+					parameterMap.put("task",task);
+					myProcessAdditionPanel.updateTask(parameterMap);
+				}
+			}
+			
+			protected function combobox1_changeHandler(event:ListEvent):void
+			{
+				task.taskType = taskyTypeList.selectedItem as TaskType;
+			}
+			
+			
+			
+			protected function previousTaskSelectionClickHandler(event:MouseEvent):void
+			{
+				previuosTaskTitleWindow = new TitleWindow();
+				
+				var mypreviousTaskPanel:previousTaskPanel = new previousTaskPanel();
+				mypreviousTaskPanel.tasklist = tasklist;
+				mypreviousTaskPanel.myTaskPanel = this;
+				
+				previuosTaskTitleWindow.addChild(mypreviousTaskPanel);
+				PopUpManager.addPopUp(previuosTaskTitleWindow, this,true);
+				PopUpManager.centerPopUp(previuosTaskTitleWindow);
+			}
+			
+			
+			public function removePreviousTaskList():void 
+			{
+				PopUpManager.removePopUp(previuosTaskTitleWindow);
+			}
+			
+			public function removeNextTaskList():void 
+			{
+				PopUpManager.removePopUp(nextTaskTitleWindow);
+			}
+			
+			protected function nextTaskSelectionClickHandler(event:MouseEvent):void
+			{
+				nextTaskTitleWindow = new TitleWindow();
+				
+				var mynextTaskPanel:nextTaskPanel = new nextTaskPanel();
+				mynextTaskPanel.tasklist = tasklist;
+				mynextTaskPanel.myTaskPanel = this;
+				
+				nextTaskTitleWindow.addChild(mynextTaskPanel);
+				PopUpManager.addPopUp(nextTaskTitleWindow, this,true);
+				PopUpManager.centerPopUp(nextTaskTitleWindow);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	
+	<mx:VBox width="100%" height="100%">
+		
+		<mx:Form width="100%">
+			
+			<mx:FormItem label="Task Name :">
+				<mx:TextInput id="taskName" width="150" text="{task.name}"/>
+			</mx:FormItem>
+			
+			
+			<mx:FormItem label="Task Type :">
+				<mx:ComboBox id="taskyTypeList" change="combobox1_changeHandler(event)" dataProvider="{taskTypeList}"
+							 labelField="name" width="150" selectedItem="{task.taskType}"/>
+			</mx:FormItem>
+			
+			
+			<mx:FormItem label="Max Process Date :">
+				<mx:NumericStepper id="maxProcessDate" width="150"  value="{maximumProcessTime}"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Previous Task :">
+				<mx:HBox>
+					<mx:TextInput id="previousTaskName" text="{task.previousTask.name}"  width="150"/>
+					<mx:Button label="select" click="previousTaskSelectionClickHandler(event)" />	
+				</mx:HBox>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Next Task :">
+				<mx:HBox>
+				    <mx:TextInput id="nextTaskName" text="{task.nextTask.name}" width="150"/>
+				    <mx:Button label="select" click="nextTaskSelectionClickHandler(event)" />
+				</mx:HBox>
+			</mx:FormItem>
+			
+		</mx:Form>
+		
+	
+	<mx:HBox  verticalAlign="bottom">
+		<mx:Button label="OK" click="button2_clickHandler(event)" />
+		<mx:Button label="Cancel" click="button1_clickHandler(event)"/>
+	</mx:HBox>
+	
+	</mx:VBox>
+	
+</s:Group>
